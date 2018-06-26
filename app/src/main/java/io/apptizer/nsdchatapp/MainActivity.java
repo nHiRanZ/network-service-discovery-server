@@ -1,6 +1,9 @@
 package io.apptizer.nsdchatapp;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.databinding.DataBindingUtil;
 import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
@@ -15,7 +18,6 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -44,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ServerSocket serverSocket;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,7 +55,22 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         activityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("update.action.button");
+        BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getBooleanExtra("addContentButtonVisibility", false)) {
+                    activityMainBinding.addContentButton.setVisibility(View.VISIBLE);
+                } else {
+                    activityMainBinding.addContentButton.setVisibility(View.GONE);
+                }
+            }
+        };
+        registerReceiver(broadcastReceiver,filter);
     }
 
     @Override
@@ -121,23 +139,33 @@ public class MainActivity extends AppCompatActivity {
         serverSocket.setReuseAddress(true);
         serverSocket.bind(new InetSocketAddress(serverAddr, mPort));
 
+        SocketPoolThread.setServerSocket(serverSocket);
+
         tearDown();
-        registerService = new RegisterService(mContext, mNsdManager, mPort, mServiceName, SERVICE_TYPE, new AsyncTaskCallback() {
-            @Override
-            public void onTaskCompleted(Object response) throws IOException {
-                Log.d(TAG, "onTaskCompleted");
-                Log.d(TAG, response.toString());
-
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        activityMainBinding.addContentButton.setVisibility(View.VISIBLE);
-                    }
-                });
-            }
-        });
-
-        registerService.initiate();
+        Intent intent = new Intent(this, RegisterNsdService.class);
+        intent.putExtra("mServiceName", mServiceName);
+        intent.putExtra("mServiceType", SERVICE_TYPE);
+        intent.putExtra("mPort", mPort);
+        this.startService(intent);
+//        registerService = new RegisterService(mContext, mNsdManager, mPort, mServiceName, SERVICE_TYPE, new AsyncTaskCallback() {
+//            @Override
+//            public void onTaskCompleted(Object response) throws IOException {
+//                Log.d(TAG, "onTaskCompleted");
+//                Log.d(TAG, response.toString());
+//
+//                runOnUiThread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        activityMainBinding.addContentButton.setVisibility(View.VISIBLE);
+//                    }
+//                });
+//
+//                Intent socketPoolService = new Intent(mContext, RegisterNsdService.class);
+//                mContext.startService(socketPoolService);
+//            }
+//        });
+//
+//        registerService.initiate();
     }
 
     public String getIPAddress(boolean useIPv4) {

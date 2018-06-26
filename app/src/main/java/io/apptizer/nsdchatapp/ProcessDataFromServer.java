@@ -2,6 +2,7 @@ package io.apptizer.nsdchatapp;
 
 import android.app.Activity;
 import android.os.AsyncTask;
+import android.widget.LinearLayout;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -10,6 +11,8 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ProcessDataFromServer extends AsyncTask<String, Activity, Object> {
     private StringBuilder ordersString;
@@ -24,18 +27,18 @@ public class ProcessDataFromServer extends AsyncTask<String, Activity, Object> {
     }
 
     @Override
-    protected Object doInBackground(String... strings) {
+    protected Void doInBackground(String... strings) {
         PrintWriter out = null;
         try {
-            this.socket = serverSocket.accept();
-
-            output = socket.getOutputStream();
-            writer = new PrintWriter(output, true);
-            writer.println(ordersString);
+            for (Socket socket : SocketPoolThread.getSocketList()) {
+                output = socket.getOutputStream();
+                writer = new PrintWriter(output, true);
+                writer.println(ordersString);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        return out;
+        return null;
     }
 }
