@@ -12,6 +12,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 
+import com.google.gson.Gson;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -26,7 +28,7 @@ import io.apptizer.nsdchatapp.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
     public static final String TAG = "ServerApp";
-    String mServiceName = "BIZ_1whe199y29f";
+    String mServiceName = "BIZ_1whe199y29f_PA";
     final String SERVICE_TYPE = "_http._tcp.";
 
     Context mContext;
@@ -47,6 +49,10 @@ public class MainActivity extends AppCompatActivity {
     private ServerSocket serverSocket;
 
     BroadcastReceiver broadcastReceiver;
+
+    OrderResponse orderResponse = new OrderResponse();
+
+    Gson gson = new Gson();
 
 
     @Override
@@ -94,7 +100,11 @@ public class MainActivity extends AppCompatActivity {
         orders.add(order);
         count++;
 
-        StringBuilder ordersString = new StringBuilder(orders.toString());
+        orderResponse.setOrders(orders);
+
+        String jsonInString = gson.toJson(orderResponse);
+
+        StringBuilder ordersString = new StringBuilder(jsonInString);
 
 //        for (Order selectedOrder : orders) {
 //            ordersString.append(selectedOrder.toString()).append("\n");
@@ -114,7 +124,16 @@ public class MainActivity extends AppCompatActivity {
         orders.clear();
         count = 0;
 
-        StringBuilder ordersString = new StringBuilder("Server App");
+        orderResponse.setOrders(orders);
+
+        String jsonInString = gson.toJson(orderResponse);
+
+        StringBuilder ordersString = new StringBuilder(jsonInString);
+
+        ProcessDataFromServer processDataFromServer = new ProcessDataFromServer(ordersString, serverSocket);
+        processDataFromServer.execute();
+
+        ordersString = new StringBuilder("Server App");
         Log.d(TAG, "===============================================");
 
         activityMainBinding.contentContainer.setText(ordersString);
